@@ -73,12 +73,13 @@ def application_principale():
         if nom_cadre == "ConnexionFrame":
             frames["ConnexionFrame"].reset_fields()
 
-    # Interface Connexion
+# Connexion utilisateur (mis à jour avec champs séparés pour création de compte)
     class ConnexionFrame(tk.Frame):
         def __init__(self, parent):
             super().__init__(parent, bg="#f0f0f0")
             tk.Label(self, text="Connexion", font=("Helvetica", 18, "bold"), bg="#f0f0f0").pack(pady=20)
-            
+
+            # Champs de connexion
             tk.Label(self, text="Nom d'utilisateur :", bg="#f0f0f0").pack(pady=5)
             self.entry_username = tk.Entry(self, width=30)
             self.entry_username.pack(pady=5)
@@ -88,7 +89,27 @@ def application_principale():
             self.entry_password.pack(pady=5)
 
             btn_connexion = tk.Button(self, text="Se connecter", command=self.connexion_ui, bg="#4caf50", fg="white", width=20, font=("Helvetica", 10, "bold"))
-            btn_connexion.pack(pady=20)
+            btn_connexion.pack(pady=10)
+
+            # Bouton pour afficher les champs de création de compte
+            btn_creer_compte = tk.Button(self, text="Créer un compte", command=self.afficher_champs_creation, bg="#2196f3", fg="white", width=20, font=("Helvetica", 10, "bold"))
+            btn_creer_compte.pack(pady=10)
+
+            # Champs de création de compte (initialement cachés)
+            self.cadre_creation = tk.Frame(self, bg="#f0f0f0")
+
+            tk.Label(self.cadre_creation, text="Nom d'utilisateur (nouveau) :", bg="#f0f0f0").pack(pady=5)
+            self.entry_new_username = tk.Entry(self.cadre_creation, width=30)
+            self.entry_new_username.pack(pady=5)
+
+            tk.Label(self.cadre_creation, text="Mot de passe (nouveau) :", bg="#f0f0f0").pack(pady=5)
+            self.entry_new_password = tk.Entry(self.cadre_creation, width=30, show="*")
+            self.entry_new_password.pack(pady=5)
+
+            btn_valider_creation = tk.Button(
+                self.cadre_creation, text="Valider", command=self.creer_compte_ui, bg="#4caf50", fg="white", width=20, font=("Helvetica", 10, "bold")
+            )
+            btn_valider_creation.pack(pady=10)
 
         def connexion_ui(self):
             username = self.entry_username.get()
@@ -106,9 +127,44 @@ def application_principale():
             else:
                 messagebox.showerror("Erreur", "Veuillez remplir tous les champs.")
 
+        def afficher_champs_creation(self):
+            self.cadre_creation.pack(pady=10)
+
+        def creer_compte_ui(self):
+            username = self.entry_new_username.get()
+            password = self.entry_new_password.get()
+
+            if not username or not password:
+                messagebox.showerror("Erreur", "Veuillez remplir tous les champs pour créer un compte.")
+                return
+
+            if any(user["username"] == username for user in utilisateurs["utilisateurs"]):
+                messagebox.showerror("Erreur", "Ce nom d'utilisateur existe déjà.")
+                return
+
+            utilisateurs["utilisateurs"].append({
+                "username": username,
+                "password": hasher_mot_de_passe(password),
+                "role": "client",
+                "solde": 0.0
+            })
+            sauvegarder_json(FICHIER_UTILISATEURS, utilisateurs)
+            messagebox.showinfo("Succès", "Compte créé avec succès ! Vous êtes maintenant connecté.")
+
+            # Connecter automatiquement l'utilisateur après la création du compte
+            user = connexion(utilisateurs, username, password)
+            if user:
+                frames["ClientFrame"].set_user(user)
+                afficher_cadre("ClientFrame")
+
         def reset_fields(self):
             self.entry_username.delete(0, tk.END)
             self.entry_password.delete(0, tk.END)
+            if hasattr(self, 'entry_new_username'):
+                self.entry_new_username.delete(0, tk.END)
+            if hasattr(self, 'entry_new_password'):
+                self.entry_new_password.delete(0, tk.END)
+
 
     # Interface Client
     class ClientFrame(tk.Frame):
