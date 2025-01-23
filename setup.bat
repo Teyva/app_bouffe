@@ -1,6 +1,35 @@
 @echo off
 setlocal enabledelayedexpansion
 
+REM Check for Python installation
+where python >nul 2>nul
+if %errorlevel% neq 0 (
+    echo Python is not installed or not in the system PATH.
+    echo Please install Python from https://www.python.org/downloads/
+    pause
+    exit /b 1
+)
+
+REM Check Python version
+for /f "delims=" %%v in ('python --version 2^>^&1') do set "python_version=%%v"
+echo Detected %python_version%
+
+REM Check if requirements file exists
+if not exist "requi.txt" (
+    echo requi.txt not found. Please ensure the requirements file exists.
+    pause
+    exit /b 1
+)
+
+REM Install requirements
+echo Installing required packages...
+python -m pip install -r requi.txt
+if %errorlevel% neq 0 (
+    echo Failed to install requirements. Check your internet connection and pip installation.
+    pause
+    exit /b 1
+)
+
 REM Check if utilisateurs.json exists
 if not exist "utilisateurs.json" (
     echo utilisateurs.json not found. Please ensure the file exists.
