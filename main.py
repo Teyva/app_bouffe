@@ -51,6 +51,7 @@ def connexion(utilisateurs, username, password):
 
 # Application principale
 def application_principale():
+    global utilisateurs
     root = tk.Tk()
     root.title("Application de Gestion")
     root.geometry("900x650")
@@ -142,6 +143,7 @@ def application_principale():
                 messagebox.showerror("Erreur", "Ce nom d'utilisateur existe déjà.")
                 return
 
+            # Update the global utilisateurs dictionary directly
             utilisateurs["utilisateurs"].append({
                 "username": username,
                 "password": hasher_mot_de_passe(password),
@@ -149,12 +151,18 @@ def application_principale():
                 "solde": 0.0
             })
             sauvegarder_json(FICHIER_UTILISATEURS, utilisateurs)
+            
             messagebox.showinfo("Succès", "Compte créé avec succès ! Vous êtes maintenant connecté.")
 
             # Connecter automatiquement l'utilisateur après la création du compte
             user = connexion(utilisateurs, username, password)
             if user:
                 frames["ClientFrame"].set_user(user)
+                
+                # Refresh the GestionUtilisateursFrame
+                if "GestionUtilisateursFrame" in frames:
+                    frames["GestionUtilisateursFrame"].mettre_a_jour_interface()
+                
                 afficher_cadre("ClientFrame")
 
         def reset_fields(self):
@@ -364,6 +372,7 @@ def application_principale():
             self.mettre_a_jour_interface()
 
         def mettre_a_jour_interface(self):
+
             for widget in self.cadre_utilisateurs.winfo_children():
                 widget.destroy()
             for utilisateur in self.utilisateurs["utilisateurs"]:
