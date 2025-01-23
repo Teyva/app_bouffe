@@ -43,7 +43,7 @@ def hasher_mot_de_passe(password):
     return hashlib.md5(password.encode()).hexdigest()
 
 # Connexion utilisateur
-def connexion(utilisateurs, username, password):
+def connexion(utilisateurs, username, password):  
     for user in utilisateurs["utilisateurs"]:
         if user["username"] == username and user["password"] == hasher_mot_de_passe(password):
             return user
@@ -51,7 +51,7 @@ def connexion(utilisateurs, username, password):
 
 # Application principale
 def application_principale():
-    global utilisateurs
+    global utilisateurs, produits, frames
     root = tk.Tk()
     root.title("Application de Gestion")
     root.geometry("900x650")
@@ -73,6 +73,13 @@ def application_principale():
         frame.tkraise()
         if nom_cadre == "ConnexionFrame":
             frames["ConnexionFrame"].reset_fields()
+            
+            # Réinitialiser les fichiers JSON à leur état initial
+            utilisateurs = charger_json(FICHIER_UTILISATEURS, {"utilisateurs": []})
+            produits = charger_json(FICHIER_PRODUITS, {"produits": []})
+            
+            # Réinitialiser avec le compte administrateur par défaut
+            initialiser_utilisateurs()
 
 # Connexion utilisateur (mis à jour avec champs séparés pour création de compte)
     class ConnexionFrame(tk.Frame):
@@ -207,9 +214,13 @@ def application_principale():
                 messagebox.showerror("Erreur", "Le montant doit être positif.")
 
         def mettre_a_jour_interface(self):
-            self.label_solde.config(text=f"Solde : {self.user['solde']:.2f}$")
+            self.produits = charger_json(FICHIER_PRODUITS, {"produits": []})
+            if self.user:
+                self.label_solde.config(text=f"Solde : {self.user['solde']:.2f}$")
+            
             for widget in self.cadre_produits.winfo_children():
                 widget.destroy()
+            
             for produit in produits["produits"]:
                 btn = tk.Button(
                     self.cadre_produits,
@@ -223,13 +234,19 @@ def application_principale():
                 btn.pack(pady=5)
 
         def acheter_produit(self, produit):
-            if produit["quantite"] > 0 :
+            if produit["quantite"] > 0:
                 produit["quantite"] -= 1
                 self.user["solde"] -= produit["prix"]
                 sauvegarder_json(FICHIER_PRODUITS, produits)
                 sauvegarder_json(FICHIER_UTILISATEURS, utilisateurs)
                 self.mettre_a_jour_interface()
-            elif produit["quantite"] <= 0:
+
+                # Refresh admin frames if they exist
+                if "GestionProduitsFrame" in frames:
+                    frames["GestionProduitsFrame"].mettre_a_jour_interface()
+                if "GestionUtilisateursFrame" in frames:
+                    frames["GestionUtilisateursFrame"].mettre_a_jour_interface()
+            else:
                 messagebox.showerror("Rupture de stock", "Ce produit est en rupture de stock.")
 
     # Interface Administrateur
@@ -310,6 +327,7 @@ def application_principale():
                 messagebox.showerror("Erreur", "Veuillez entrer des valeurs valides pour le prix et la quantité.")
 
         def mettre_a_jour_interface(self):
+            self.produits = charger_json(FICHIER_PRODUITS, {"produits": []})
             """Met à jour la liste des produits affichée à l'écran."""
             for widget in self.cadre_produits.winfo_children():
                 widget.destroy()
@@ -340,6 +358,10 @@ def application_principale():
                     command=lambda p=produit: self.retirer_produit(p),
                     bg="#f44336", fg="white", font=("Helvetica", 8))
                 btn_supprimer.grid(row=row, column=4, padx=10, pady=5)
+
+            # Refresh other frames that might need product updates
+            if "ClientFrame" in frames:
+                frames["ClientFrame"].mettre_a_jour_interface()
 
         def modifier_produit(self, produit, entry_stock, entry_prix):
             try:
@@ -372,7 +394,7 @@ def application_principale():
             self.mettre_a_jour_interface()
 
         def mettre_a_jour_interface(self):
-
+            self.produits = charger_json(FICHIER_PRODUITS, {"produits": []})
             for widget in self.cadre_utilisateurs.winfo_children():
                 widget.destroy()
             for utilisateur in self.utilisateurs["utilisateurs"]:
