@@ -1,0 +1,16 @@
+{
+    "produits": [
+        {
+            "id": 1,
+            "nom": "Pain",
+            "prix": 1.0,
+            "quantite": 47
+        },
+        {
+            "id": 2,
+            "nom": "Fromage",
+            "prix": 3.0,
+            "quantite": 41
+        }
+    ]
+}
