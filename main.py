@@ -399,7 +399,6 @@ def application_principale():
 
     afficher_cadre("ConnexionFrame")
     root.mainloop()
-
 # Exécuter l'application
 if __name__ == "__main__":
     initialiser_utilisateurs()
